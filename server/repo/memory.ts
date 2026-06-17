@@ -26,7 +26,7 @@ export class MemoryRepository implements Repository {
     return true;
   }
   async listEvents(leadId: string) {
-    return [...this.events.values()].filter(e => e.leadId === leadId);
+    return [...this.events.values()].filter(e => e.leadId === leadId).map(e => ({ ...e }));
   }
 
   async getClaimByLead(leadId: string) { const c = this.claims.get(leadId); return c ? { ...c } : null; }
@@ -39,10 +39,16 @@ export class MemoryRepository implements Repository {
   async countClaims() { return this.claims.size; }
 
   async resetSession(sessionId: string) {
-    for (const [id, l] of this.leads) if (l.sessionId === sessionId) {
+    const leadIds = [...this.leads.entries()]
+      .filter(([, l]) => l.sessionId === sessionId)
+      .map(([id]) => id);
+    for (const id of leadIds) {
       this.leads.delete(id);
       this.claims.delete(id);
-      for (const [eid, e] of this.events) if (e.leadId === id) this.events.delete(eid);
+    }
+    const leadIdSet = new Set(leadIds);
+    for (const [eid, e] of [...this.events]) {
+      if (leadIdSet.has(e.leadId)) this.events.delete(eid);
     }
   }
 }
