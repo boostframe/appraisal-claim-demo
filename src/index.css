@@ -231,5 +231,6 @@ select.control { appearance: none; background-image: url("data:image/svg+xml,%3C
 .splash-card p { text-align: center; color: var(--ink-2); margin: 0 0 20px; font-size: 14px; }
 .splash-card .control { text-align: center; }
 .splash-card .btn { margin-top: 14px; }
+.splash-error { color: var(--danger); font-size: 13px; text-align: center; margin: 10px 0 0; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

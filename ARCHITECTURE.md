@@ -77,7 +77,7 @@ netlify/functions/          Thin HTTP wiring — parse request, call domain, ret
 server/domain/              Pure business logic — no I/O, fully unit-tested
 server/repo/                Repository interface
   memory.ts                 In-memory impl used by unit tests (no DB)
-  postgres.ts               Neon Postgres impl used in production
+  postgres.ts               Netlify Database (GA) impl — @netlify/database, auto NETLIFY_DB_URL
 server/docusign/            DocuSignClient interface
   fake.ts                   In-memory fake — self-contained signing ceremony
   real.ts                   JWT Server-Side Grant + embedded signing (real sandbox)
@@ -120,19 +120,27 @@ Browser
 
 ---
 
-## DocuSign sandbox verification
+## Live verification (2026-06-18)
 
-**PENDING — to be filled in after the live sandbox spike.**
+**VERIFIED end-to-end against the real DocuSign sandbox + Netlify Database on the deployed
+site.** A scripted browser test passed 11/11:
 
-The `scripts/ds-spike.ts` script exercises credential exchange and envelope creation
-against the DocuSign sandbox. Once run, record here:
+- [x] `create-lead` returns a real `envelopeId` + embedded signing URL (JWT auth → envelope).
+- [x] Embedded signing ceremony renders and completes in-app.
+- [x] DocuSign **Connect** fires `/api/docusign-webhook`; the lead flips to `signed` live.
+- [x] `getDocument('combined')` returns a valid PDF; `/api/get-pdf` serves it (HTTP 200, `application/pdf`).
+- [x] Gating: pay-without-sign → no claim; both → exactly one claim, status `New Intake - Paid`.
+- [x] Idempotency: replaying an event → "duplicate ignored", no second claim.
 
-- [ ] `envelopeId` returned by `createEnvelope()`
-- [ ] Confirmation that the embedded signing URL opened in a browser tab
-- [ ] Confirmation that `getDocument('combined')` returned a valid PDF buffer
+### Operational notes from the live setup
 
-Do not mark this section complete until all three are confirmed against a real sandbox
-account. The demo's `FakeDocuSign` does not substitute for this verification.
+- **Database:** uses the GA **Netlify Database** (`@netlify/database`, auto `NETLIFY_DB_URL`).
+  The deprecated `@netlify/neon` extension (`NETLIFY_DATABASE_URL`) is blocked for new creation.
+- **DocuSign private key:** env-var storage flattens PEM newlines, which breaks RS256 signing.
+  `config.ts` `normalizePrivateKey()` accepts base64 (recommended), `\n`-escaped, or raw multi-line,
+  and reconstructs a valid PEM when newlines were flattened to spaces.
+- **JWT consent:** one-time grant (`signature impersonation`) is required, or the token request
+  returns `consent_required`.
 
 ---
 
@@ -171,9 +179,9 @@ includes a minimal hand-written `.d.ts` (`server/docusign/docusign-esign.d.ts`).
 Two call sites should be verified against the live sandbox response before relying on
 them:
 
-- `token.body.access_token` — confirm the shape of the token response object.
-- `envApi.getDocument(accountId, envelopeId, 'combined')` — confirm it returns a
-  binary string suitable for `Buffer.from(result, 'binary')`.
+- `token.body.access_token` — ✅ confirmed against the live sandbox.
+- `envApi.getDocument(accountId, envelopeId, 'combined')` — ✅ confirmed: returns a binary
+  string handled by `Buffer.from(result, 'binary')`; `/api/get-pdf` serves a valid PDF.
 
-Run `scripts/ds-spike.ts` and inspect the raw responses to validate both before
-shipping.
+Both were validated during the live spike (2026-06-18). The loose typing itself remains a
+maintainability note — a proper typed declaration would restore full compile-time safety.

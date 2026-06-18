@@ -7,6 +7,12 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   if (!r.ok) throw new Error(`${path} -> ${r.status}`);
   return r.json() as Promise<T>;
 }
+export const verifyPasscode = async (passcode: string): Promise<boolean> => {
+  const r = await fetch('/api/verify-passcode', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ passcode }) });
+  if (!r.ok) return false;
+  const d = await r.json() as { ok: boolean };
+  return d.ok === true;
+};
 export const createLead = (passcode: string, intake: IntakeData) => post<CreateLeadResponse>('/api/create-lead', { passcode, intake });
 export const getState = async (leadId: string): Promise<StateResponse> => {
   const r = await fetch(`/api/get-state?leadId=${leadId}`);
