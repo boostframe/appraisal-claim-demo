@@ -57,11 +57,12 @@ export function App() {
             {leadId && signingUrl && <SigningHost url={signingUrl} fake={fake} onDevComplete={devCompleteSigning} />}
             {leadId && !signingUrl && (
               <div className="card">
-                <p className="eyebrow">Step 3 — Payment</p>
-                <h1 className="h1">Signing complete</h1>
+                <p className="eyebrow">Your application</p>
+                <h1 className="h1">Track your claim in the case file</h1>
                 <p className="lede">
-                  Your documents are signed and stored in the case file. Use the panel to simulate
-                  payment — the claim opens only after payment is received.
+                  The case file on the right shows your live status. Your claim opens automatically
+                  once your documents are signed and payment is received — use the controls there to
+                  continue. If you didn't finish signing, reopen the signing step from your invitation link.
                 </p>
               </div>
             )}
