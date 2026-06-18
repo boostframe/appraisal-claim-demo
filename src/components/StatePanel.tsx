@@ -9,18 +9,24 @@ export function StatePanel({ leadId, onReset }: { leadId: string; onReset: () =>
   const [state, setState] = useState<StateResponse | null>(null);
   const [log, setLog] = useState<string[]>([]);
 
-  async function refresh() { setState(await api.getState(leadId)); }
+  async function refresh() {
+    try {
+      setState(await api.getState(leadId));
+    } catch {
+      /* transient poll error — keep the last good state, try again next tick */
+    }
+  }
   useEffect(() => { refresh(); const t = setInterval(refresh, 1500); return () => clearInterval(t); }, [leadId]);
 
   function note(s: string) { setLog(l => [s, ...l].slice(0, 8)); }
 
   const lead = state?.lead;
   const reached = (stage: string) => {
-    if (!lead) return false;
-    const order = ['pending', 'signed', 'paid', 'claimed'];
-    const claimed = !!state?.claim;
-    const cur = claimed ? 'claimed' : (lead.paid && lead.signed ? 'claimed' : lead.signed ? 'signed' : lead.paid ? 'paid' : 'pending');
-    return order.indexOf(stage) <= order.indexOf(cur);
+    if (stage === 'pending') return true;
+    if (stage === 'signed') return !!lead?.signed;
+    if (stage === 'paid') return !!lead?.paid;
+    if (stage === 'claimed') return !!state?.claim;
+    return false;
   };
 
   return (
