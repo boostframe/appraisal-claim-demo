@@ -12,6 +12,6 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
   if (!ref) return new Response('not found', { status: 404 });
   const bytes = await getBlobs().get(key);
   if (!bytes) return new Response('not found', { status: 404 });
-  const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
   return new Response(body, { headers: { 'content-type': ref.contentType, 'content-disposition': `inline; filename="${ref.name}"` } });
 };

@@ -1,18 +1,145 @@
-// src/components/IntakeForm.tsx
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { IntakeData } from '../../server/domain/types';
-export function IntakeForm({ onSubmit, busy }: { onSubmit: (d: IntakeData) => void; busy: boolean }) {
-  const [d, setD] = useState<IntakeData>({ claimantName: '', claimantEmail: '', propertyAddress: '', lossType: 'Fire', lossDescription: '' });
-  const set = (k: keyof IntakeData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setD({ ...d, [k]: e.target.value });
+
+type Category = 'vehicle_photo' | 'valuation_report' | 'supporting_doc';
+export type PickedFile = { category: Category; file: File };
+
+const EMPTY: IntakeData = {
+  claimantName: '', claimantEmail: '', phone: '', address: '',
+  insuranceCarrier: '', claimNumber: '', adjuster: '',
+  vehicleYear: '', vehicleMake: '', vehicleModel: '', vin: '', mileage: '',
+  settlementOffer: '', lienholder: '', gapCoverage: 'Unknown', requestRightToAppraisal: false,
+};
+
+export function IntakeForm({ onSubmit, busy }: { onSubmit: (d: IntakeData, files: PickedFile[]) => void; busy: boolean }) {
+  const [d, setD] = useState<IntakeData>(EMPTY);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [valuation, setValuation] = useState<File[]>([]);
+  const [supporting, setSupporting] = useState<File[]>([]);
+
+  const set = (k: keyof IntakeData) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      setD({ ...d, [k]: e.target.value });
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const files: PickedFile[] = [
+      ...photos.map(file => ({ category: 'vehicle_photo' as Category, file })),
+      ...valuation.map(file => ({ category: 'valuation_report' as Category, file })),
+      ...supporting.map(file => ({ category: 'supporting_doc' as Category, file })),
+    ];
+    onSubmit(d, files);
+  }
+
   return (
-    <form onSubmit={e => { e.preventDefault(); onSubmit(d); }} style={{ display: 'grid', gap: 10, maxWidth: 520 }}>
-      <h3>Customer intake — appraisal claim</h3>
-      <input required placeholder="Claimant name" value={d.claimantName} onChange={set('claimantName')} />
-      <input required type="email" placeholder="Claimant email" value={d.claimantEmail} onChange={set('claimantEmail')} />
-      <input required placeholder="Property address" value={d.propertyAddress} onChange={set('propertyAddress')} />
-      <select value={d.lossType} onChange={set('lossType')}><option>Fire</option><option>Water</option><option>Wind</option><option>Other</option></select>
-      <textarea required placeholder="Describe the loss" value={d.lossDescription} onChange={set('lossDescription')} />
-      <button disabled={busy} type="submit">{busy ? 'Preparing documents…' : 'Submit & sign'}</button>
+    <form className="card form" onSubmit={submit}>
+      <div>
+        <p className="eyebrow">Step 1 — Customer intake</p>
+        <h1 className="h1">Start a new appraisal claim</h1>
+        <p className="lede">
+          Tell us about the vehicle and the insurer's offer. We'll generate your agreements for
+          signature, then collect payment — your claim opens only after both are complete.
+        </p>
+      </div>
+
+      <section>
+        <p className="section__title">Claimant</p>
+        <div className="grid-2">
+          <Field label="Full name" req><input className="control" required value={d.claimantName} onChange={set('claimantName')} /></Field>
+          <Field label="Email" req><input className="control" type="email" required value={d.claimantEmail} onChange={set('claimantEmail')} /></Field>
+          <Field label="Phone" req><input className="control" required value={d.phone} onChange={set('phone')} /></Field>
+          <Field label="Mailing address" req wide><input className="control" required value={d.address} onChange={set('address')} /></Field>
+        </div>
+      </section>
+
+      <section>
+        <p className="section__title">Insurance</p>
+        <div className="grid-2">
+          <Field label="Insurance carrier" req><input className="control" required value={d.insuranceCarrier} onChange={set('insuranceCarrier')} /></Field>
+          <Field label="Claim number" req><input className="control" required value={d.claimNumber} onChange={set('claimNumber')} /></Field>
+          <Field label="Adjuster (name & contact)" wide><input className="control" value={d.adjuster} onChange={set('adjuster')} /></Field>
+        </div>
+      </section>
+
+      <section>
+        <p className="section__title">Vehicle</p>
+        <div className="grid-2">
+          <Field label="Year" req><input className="control" required value={d.vehicleYear} onChange={set('vehicleYear')} /></Field>
+          <Field label="Make" req><input className="control" required value={d.vehicleMake} onChange={set('vehicleMake')} /></Field>
+          <Field label="Model" req><input className="control" required value={d.vehicleModel} onChange={set('vehicleModel')} /></Field>
+          <Field label="Mileage"><input className="control" inputMode="numeric" value={d.mileage} onChange={set('mileage')} /></Field>
+          <Field label="VIN" req wide><input className="control" required value={d.vin} onChange={set('vin')} /></Field>
+        </div>
+      </section>
+
+      <section>
+        <p className="section__title">Settlement & coverage</p>
+        <div className="grid-2">
+          <Field label="Settlement offer"><input className="control" placeholder="$0.00" value={d.settlementOffer} onChange={set('settlementOffer')} /></Field>
+          <Field label="Lienholder"><input className="control" placeholder="None" value={d.lienholder} onChange={set('lienholder')} /></Field>
+          <Field label="GAP coverage">
+            <select className="control" value={d.gapCoverage} onChange={set('gapCoverage')}>
+              <option>Unknown</option><option>Yes</option><option>No</option>
+            </select>
+          </Field>
+        </div>
+        <div className="check" style={{ marginTop: 14 }}>
+          <input id="rta" type="checkbox" checked={d.requestRightToAppraisal}
+            onChange={e => setD({ ...d, requestRightToAppraisal: e.target.checked })} />
+          <label htmlFor="rta">Request Right to Appraisal
+            <small>Adds a Right to Appraisal Request to your signing packet.</small>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <p className="section__title">Documents</p>
+        <div className="grid-2">
+          <Upload label="Vehicle photos" accept="image/*" multiple files={photos} onChange={setPhotos} />
+          <Upload label="Insurance valuation report" accept="image/*,application/pdf" files={valuation} onChange={setValuation} />
+          <Upload label="Supporting documents" accept="image/*,application/pdf" multiple wide files={supporting} onChange={setSupporting} />
+        </div>
+        <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>Images or PDF, up to 4&nbsp;MB each in this demo.</p>
+      </section>
+
+      <button className="btn btn--primary" disabled={busy} type="submit">
+        {busy ? 'Preparing documents…' : 'Submit & sign'}
+      </button>
     </form>
+  );
+}
+
+function Field({ label, req, wide, children }: { label: string; req?: boolean; wide?: boolean; children: React.ReactNode }) {
+  return (
+    <div className={'field' + (wide ? ' field--wide' : '')}>
+      <label>{label}{req && <span className="req"> *</span>}</label>
+      {children}
+    </div>
+  );
+}
+
+function Upload({ label, accept, multiple, wide, files, onChange }: {
+  label: string; accept: string; multiple?: boolean; wide?: boolean; files: File[]; onChange: (f: File[]) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className={'field' + (wide ? ' field--wide' : '')}>
+      <label>{label}</label>
+      <div className="upload">
+        <label className="upload__drop">
+          <input ref={ref} type="file" accept={accept} multiple={multiple}
+            onChange={e => {
+              const picked = Array.from(e.target.files ?? []);
+              onChange(multiple ? [...files, ...picked] : picked);
+            }} />
+          ⬆ Choose file{multiple ? 's' : ''}
+        </label>
+        {files.length > 0 && (
+          <ul className="filelist">
+            {files.map((f, i) => <li key={i} className="file-chip"><span>{f.name}</span></li>)}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }

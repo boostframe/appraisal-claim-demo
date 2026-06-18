@@ -17,3 +17,12 @@ export const simulatePayment = (leadId: string) => post<{ duplicate: boolean; cl
 export const replayEvent = (leadId: string) => post<{ replayed: string | null; duplicate: boolean }>('/api/replay-event', { leadId });
 export const reset = () => post<{ ok: boolean }>('/api/reset', {});
 export const completeSigningDev = (leadId: string) => post<{ duplicate: boolean; claimed: boolean }>('/api/dev-complete-signing', { leadId });
+export const uploadFile = async (leadId: string, category: string, file: File) => {
+  const fd = new FormData();
+  fd.append('leadId', leadId);
+  fd.append('category', category);
+  fd.append('file', file);
+  const r = await fetch('/api/upload', { method: 'POST', body: fd });
+  if (!r.ok) throw new Error(`/api/upload -> ${r.status}`);
+  return r.json() as Promise<{ key: string; name: string; size: number; category: string }>;
+};
