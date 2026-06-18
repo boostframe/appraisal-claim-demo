@@ -1,0 +1,14 @@
+// src/api.ts
+import type { CreateLeadResponse, StateResponse } from './types';
+import type { IntakeData } from '../server/domain/types';
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`${path} -> ${r.status}`);
+  return r.json() as Promise<T>;
+}
+export const createLead = (passcode: string, intake: IntakeData) => post<CreateLeadResponse>('/api/create-lead', { passcode, intake });
+export const getState = async (leadId: string) => (await fetch(`/api/get-state?leadId=${leadId}`)).json() as Promise<StateResponse>;
+export const simulatePayment = (leadId: string) => post<{ duplicate: boolean; claimed: boolean }>('/api/simulate-payment', { leadId });
+export const replayEvent = (leadId: string) => post<{ replayed: string | null; duplicate: boolean }>('/api/replay-event', { leadId });
+export const reset = () => post<{ ok: boolean }>('/api/reset', {});
