@@ -8,7 +8,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return r.json() as Promise<T>;
 }
 export const createLead = (passcode: string, intake: IntakeData) => post<CreateLeadResponse>('/api/create-lead', { passcode, intake });
-export const getState = async (leadId: string) => (await fetch(`/api/get-state?leadId=${leadId}`)).json() as Promise<StateResponse>;
+export const getState = async (leadId: string): Promise<StateResponse> => {
+  const r = await fetch(`/api/get-state?leadId=${leadId}`);
+  if (!r.ok) throw new Error(`/api/get-state -> ${r.status}`);
+  return r.json() as Promise<StateResponse>;
+};
 export const simulatePayment = (leadId: string) => post<{ duplicate: boolean; claimed: boolean }>('/api/simulate-payment', { leadId });
 export const replayEvent = (leadId: string) => post<{ replayed: string | null; duplicate: boolean }>('/api/replay-event', { leadId });
 export const reset = () => post<{ ok: boolean }>('/api/reset', {});

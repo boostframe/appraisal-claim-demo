@@ -10,11 +10,12 @@ import type { IntakeData } from '../server/domain/types';
 const Banner = () => <div style={{ background: '#fde68a', padding: 8, textAlign: 'center', fontSize: 13 }}>TEST MODE — DocuSign Sandbox / simulated payment</div>;
 
 export function App() {
-  const [passcode, setPasscode] = useState<string | null>(null);
+  const [passcode, setPasscode] = useState<string | null>(sessionStorage.getItem('passcode'));
   const [leadId, setLeadId] = useState<string | null>(localStorage.getItem('leadId'));
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => { if (passcode) sessionStorage.setItem('passcode', passcode); }, [passcode]);
   useEffect(() => { if (leadId) localStorage.setItem('leadId', leadId); }, [leadId]);
 
   async function submit(d: IntakeData) {
