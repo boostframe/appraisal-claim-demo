@@ -20,7 +20,7 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
 
   const lead: Lead = {
     id: 'lead-' + crypto.randomUUID(), sessionId: sid, status: 'pending',
-    intake: body.intake, signed: false, paid: false, createdAt: deps.now(), updatedAt: deps.now(),
+    intake: body.intake, signed: false, paid: false, uploads: [], createdAt: deps.now(), updatedAt: deps.now(),
   };
 
   const ds = getDs();
