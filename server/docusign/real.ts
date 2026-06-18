@@ -11,7 +11,8 @@ export interface DocuSignConfig {
   privateKey: string;        // RSA private key PEM
 }
 
-async function authedApi(cfg: DocuSignConfig): Promise<docusign.ApiClient> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function authedApi(cfg: DocuSignConfig): Promise<any> {
   const api = new docusign.ApiClient({ basePath: cfg.basePath, oAuthBasePath: cfg.oauthBasePath });
   const token = await api.requestJWTUserToken(
     cfg.integrationKey, cfg.userId, ['signature', 'impersonation'],
