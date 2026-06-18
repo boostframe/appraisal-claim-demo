@@ -3,11 +3,15 @@ import { getRepo, getDs, getBlobs, buildDeps, initStore } from '../../server/wir
 import { handleEnvelopeCompleted } from '../../server/domain/handlers';
 
 export function parseConnectPayload(body: any): { envelopeId: string; status: string; eventId: string } | null {
-  const envelopeId = body?.data?.envelopeId;
+  const envelopeId = body?.data?.envelopeId ?? body?.envelopeId;
   const status = body?.data?.envelopeSummary?.status ?? body?.status;
-  if (!envelopeId || status !== 'completed') return null;
-  const when = body?.generatedDateTime ?? '';
-  return { envelopeId, status, eventId: `${envelopeId}:completed:${when}` };
+  // Treat completion as signalled by either the envelope status or the Connect
+  // event name, so the webhook works regardless of which envelope-data fields
+  // the Connect configuration includes.
+  const completed = status === 'completed' || body?.event === 'envelope-completed';
+  if (!envelopeId || !completed) return null;
+  const when = body?.generatedDateTime ?? body?.data?.envelopeSummary?.completedDateTime ?? '';
+  return { envelopeId, status: 'completed', eventId: `${envelopeId}:completed:${when}` };
 }
 
 export default async (req: Request, _ctx: Context): Promise<Response> => {
