@@ -57,6 +57,11 @@ export function createPostgresRepository(): Repository {
       const r = await sql`SELECT * FROM leads WHERE id = ${id}`;
       return r[0] ? rowToLead(r[0]) : null;
     },
+    async getLeadByEnvelope(envelopeId) {
+      const sql = getSql();
+      const r = await sql`SELECT * FROM leads WHERE envelope_id = ${envelopeId}`;
+      return r[0] ? rowToLead(r[0]) : null;
+    },
     async updateLead(id, patch) {
       const cur = await this.getLead(id);
       if (!cur) throw new Error(`lead ${id} not found`);

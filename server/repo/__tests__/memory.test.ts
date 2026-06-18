@@ -54,6 +54,12 @@ describe('MemoryRepository', () => {
     expect(second.type).toBe('payment.succeeded');
   });
 
+  it('finds a lead by envelope id', async () => {
+    await repo.createLead({ ...lead('l1'), envelopeId: 'env-7' });
+    expect((await repo.getLeadByEnvelope('env-7'))?.id).toBe('l1');
+    expect(await repo.getLeadByEnvelope('nope')).toBeNull();
+  });
+
   it('resetSession clears all leads, events, and claims for a session without touching other sessions', async () => {
     // Session 1 — lead with two events and a claim
     const l1 = { ...lead('l1'), sessionId: 's1' };

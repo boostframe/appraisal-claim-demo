@@ -12,6 +12,10 @@ export class MemoryRepository implements Repository {
 
   async createLead(l: Lead) { this.leads.set(l.id, { ...l }); }
   async getLead(id: string) { const l = this.leads.get(id); return l ? { ...l } : null; }
+  async getLeadByEnvelope(envelopeId: string) {
+    for (const l of this.leads.values()) if (l.envelopeId === envelopeId) return { ...l };
+    return null;
+  }
   async updateLead(id: string, patch: Partial<Lead>) {
     const cur = this.leads.get(id);
     if (!cur) throw new Error(`lead ${id} not found`);

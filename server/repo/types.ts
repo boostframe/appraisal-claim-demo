@@ -6,6 +6,7 @@ export interface Repository {
 
   createLead(lead: Lead): Promise<void>;
   getLead(id: string): Promise<Lead | null>;
+  getLeadByEnvelope(envelopeId: string): Promise<Lead | null>;
   updateLead(id: string, patch: Partial<Lead>): Promise<Lead>;
 
   /** Returns true if newly recorded, false if eventId was already processed. */
