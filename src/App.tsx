@@ -13,6 +13,7 @@ export function App() {
   const [passcode, setPasscode] = useState<string | null>(sessionStorage.getItem('passcode'));
   const [leadId, setLeadId] = useState<string | null>(localStorage.getItem('leadId'));
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
+  const [fake, setFake] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (passcode) sessionStorage.setItem('passcode', passcode); }, [passcode]);
@@ -20,8 +21,14 @@ export function App() {
 
   async function submit(d: IntakeData) {
     setBusy(true);
-    try { const r = await api.createLead(passcode!, d); setLeadId(r.leadId); setSigningUrl(r.signingUrl); }
+    try { const r = await api.createLead(passcode!, d); setLeadId(r.leadId); setSigningUrl(r.signingUrl); setFake(r.fake); }
     finally { setBusy(false); }
+  }
+
+  async function devCompleteSigning() {
+    if (!leadId) return;
+    await api.completeSigningDev(leadId);
+    setSigningUrl(null);
   }
 
   if (!passcode) return <Splash onEnter={setPasscode} />;
@@ -31,7 +38,7 @@ export function App() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24, padding: 24 }}>
         <div>
           {!leadId && <IntakeForm onSubmit={submit} busy={busy} />}
-          {leadId && signingUrl && <SigningHost url={signingUrl} />}
+          {leadId && signingUrl && <SigningHost url={signingUrl} fake={fake} onDevComplete={devCompleteSigning} />}
           {leadId && !signingUrl && <p>Signing complete — use the panel to simulate payment.</p>}
         </div>
         {leadId && <StatePanel leadId={leadId} onReset={() => { localStorage.removeItem('leadId'); setLeadId(null); setSigningUrl(null); }} />}

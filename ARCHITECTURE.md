@@ -44,9 +44,15 @@ written to the `processed_events` table **before** any business logic runs.
 returns `{ duplicate: true }` immediately and performs no further work.
 
 ```
-eventId = envelopeId + ":completed:" + generatedDateTime   (DocuSign)
-eventId = "payment:" + leadId + ":" + timestamp            (simulated payment)
+eventId = envelopeId + ":completed:" + generatedDateTime   (DocuSign Connect webhook)
+eventId = "pay:" + leadId                                  (simulated payment — intentionally stable)
+eventId = "dev-sign:" + leadId                             (fake-mode signing completion — intentionally stable)
 ```
+
+The simulated-payment event id is intentionally stable (`pay:${leadId}` with no
+timestamp) so that a second click on "Simulate payment" collides in the ledger and is
+treated as a duplicate immediately — that's what makes the idempotency demo work.
+The same pattern applies to the fake-mode signing completion endpoint.
 
 This makes duplicate delivery and out-of-order delivery harmless — the property
 that keeps the workflow correct when DocuSign Connect retries a failed POST.

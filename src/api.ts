@@ -16,3 +16,4 @@ export const getState = async (leadId: string): Promise<StateResponse> => {
 export const simulatePayment = (leadId: string) => post<{ duplicate: boolean; claimed: boolean }>('/api/simulate-payment', { leadId });
 export const replayEvent = (leadId: string) => post<{ replayed: string | null; duplicate: boolean }>('/api/replay-event', { leadId });
 export const reset = () => post<{ ok: boolean }>('/api/reset', {});
+export const completeSigningDev = (leadId: string) => post<{ duplicate: boolean; claimed: boolean }>('/api/dev-complete-signing', { leadId });

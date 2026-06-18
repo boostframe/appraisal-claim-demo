@@ -28,3 +28,5 @@ export function getBlobs(): BlobStore {
 }
 
 export function buildDeps(): Deps { return { genId: () => crypto.randomUUID(), now: () => new Date().toISOString() }; }
+
+export function isFake(): boolean { return FAKE; }

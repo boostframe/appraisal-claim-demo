@@ -5,4 +5,4 @@ export interface StateResponse {
   claim: { claimNumber: string; createdAt: string; pdfUrl: string } | null;
 }
 
-export interface CreateLeadResponse { leadId: string; signingUrl: string }
+export interface CreateLeadResponse { leadId: string; signingUrl: string; fake: boolean }

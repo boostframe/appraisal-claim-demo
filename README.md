@@ -34,6 +34,13 @@ DEMO_FAKE=1 netlify dev
 In fake mode the DocuSign embedded ceremony is simulated in-browser, state is held
 in memory, and no database or blob store is contacted.
 
+> **Local signing completion:** Because there is no DocuSign Connect webhook locally,
+> the signing step does not auto-complete after the embedded iframe. Instead, an
+> on-screen **"✅ Complete signing (sandbox simulation)"** button appears beneath the
+> iframe — click it to advance the lead to `signed=true` and proceed to payment.
+> In deployed/real mode this button is absent and signing is completed by the real
+> DocuSign Connect webhook firing at `/api/docusign-webhook`.
+
 ---
 
 ## Run against real DocuSign + Netlify DB
@@ -62,11 +69,15 @@ Open the app with the passcode (`?key=appraise` or type it on the splash screen)
 
 | Scenario | Expected result |
 |---|---|
-| Submit intake → sign → pay | Claim created, PDF download appears |
+| Submit intake → sign (iframe) → click **"Complete signing (sandbox simulation)"** → pay | Claim created, PDF download appears |
 | Submit intake → **Simulate payment** before signing | No claim (payment recorded, waiting for signature) |
 | Submit intake → sign → **Simulate payment** twice | Second payment is a no-op (idempotent) |
 | **Replay last event** button | Duplicate ignored, claim count unchanged |
 | **Reset demo** | Session wiped, ready for a fresh run |
+
+> **Note:** The "Complete signing" button appears only in local fake mode (`DEMO_FAKE=1`).
+> In the deployed Netlify app with a real DocuSign sandbox, signing completes via the
+> DocuSign Connect webhook and the button is not present.
 
 The **State panel** on the right shows live `signed`, `paid`, and `claimed` flags so
 the gating logic is visible in real time.
