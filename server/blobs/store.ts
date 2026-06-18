@@ -15,7 +15,8 @@ export function createNetlifyBlobStore(name = 'signed-pdfs'): BlobStore {
   const store = getStore(name);
   return {
     async put(key, data, contentType = 'application/pdf') {
-      await store.set(key, data.buffer as ArrayBuffer, { metadata: { contentType } });
+      const ab = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+      await store.set(key, ab, { metadata: { contentType } });
     },
     async get(key) {
       const ab = await store.get(key, { type: 'arrayBuffer' });
