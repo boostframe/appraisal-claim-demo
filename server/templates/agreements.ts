@@ -16,12 +16,41 @@ function doc(title: string, body: string): PopulatedDoc {
 }
 
 export function populateAgreements(i: IntakeData): PopulatedDoc[] {
-  const facts = `<p><b>Claimant:</b> ${esc(i.claimantName)} (${esc(i.claimantEmail)})</p>
-  <p><b>Property:</b> ${esc(i.propertyAddress)}</p>
-  <p><b>Loss type:</b> ${esc(i.lossType)}</p>
-  <p><b>Description:</b> ${esc(i.lossDescription)}</p>`;
-  return [
-    doc('Appraisal Agreement', `<p>This Appraisal Agreement is entered into by the claimant below for the appraisal of the described loss.</p>${facts}`),
-    doc('Letter of Authorization', `<p>The claimant below authorizes the appraiser to act on their behalf for this claim.</p>${facts}`),
+  const vehicle = `${esc(i.vehicleYear)} ${esc(i.vehicleMake)} ${esc(i.vehicleModel)}`;
+  const vehicleDetails = `<p><b>Vehicle:</b> ${vehicle}</p>
+  <p><b>VIN:</b> ${esc(i.vin)}</p>
+  <p><b>Mileage:</b> ${esc(i.mileage)}</p>`;
+  const claimantDetails = `<p><b>Claimant:</b> ${esc(i.claimantName)} &mdash; ${esc(i.claimantEmail)}</p>`;
+  const insurerDetails = `<p><b>Insurance Carrier:</b> ${esc(i.insuranceCarrier)}</p>
+  <p><b>Claim Number:</b> ${esc(i.claimNumber)}</p>
+  <p><b>Adjuster:</b> ${esc(i.adjuster)}</p>
+  <p><b>Settlement Offer:</b> ${esc(i.settlementOffer)}</p>`;
+
+  const appraisalBody = `
+  <p>This Appraisal Agreement is entered into by the claimant below in connection with the auto total-loss appraisal of the vehicle described herein.</p>
+  ${claimantDetails}
+  ${vehicleDetails}
+  ${insurerDetails}`;
+
+  const loaBody = `
+  <p>The claimant below hereby authorizes the appraiser to act on their behalf in all matters relating to this auto total-loss claim, including communication with the insurance carrier.</p>
+  ${claimantDetails}
+  ${vehicleDetails}
+  ${insurerDetails}`;
+
+  const docs: PopulatedDoc[] = [
+    doc('Appraisal Agreement', appraisalBody),
+    doc('Letter of Authorization', loaBody),
   ];
+
+  if (i.requestRightToAppraisal) {
+    const rtaBody = `
+  <p>Pursuant to the claimant's insurance policy, the claimant formally invokes their <b>Right to Appraisal</b> for the auto total-loss claim described herein.</p>
+  ${claimantDetails}
+  ${vehicleDetails}
+  ${insurerDetails}`;
+    docs.push(doc('Right to Appraisal Request', rtaBody));
+  }
+
+  return docs;
 }

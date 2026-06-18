@@ -1,6 +1,6 @@
 import { neon } from '@netlify/neon';
 import type { Repository } from './types';
-import type { Lead, DemoEvent, Claim, LeadStatus } from '../domain/types';
+import type { Lead, DemoEvent, Claim, LeadStatus, UploadRef } from '../domain/types';
 
 // Lazy initialization: defer calling neon() until first use so that
 // importing this module without NETLIFY_DATABASE_URL set does not throw.
@@ -20,19 +20,24 @@ export async function ensureSchema(): Promise<void> {
     id TEXT PRIMARY KEY, session_id TEXT NOT NULL, status TEXT NOT NULL,
     intake JSONB NOT NULL, envelope_id TEXT, signed BOOLEAN NOT NULL DEFAULT false,
     paid BOOLEAN NOT NULL DEFAULT false, pdf_blob_key TEXT,
+    uploads JSONB NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`;
   await sql`CREATE TABLE IF NOT EXISTS processed_events (
     event_id TEXT PRIMARY KEY, lead_id TEXT NOT NULL, type TEXT NOT NULL,
     received_at TEXT NOT NULL, raw JSONB)`;
   await sql`CREATE TABLE IF NOT EXISTS claims (
     id TEXT PRIMARY KEY, lead_id TEXT NOT NULL UNIQUE, claim_number TEXT NOT NULL,
-    pdf_blob_key TEXT, created_at TEXT NOT NULL)`;
+    status TEXT, pdf_blob_key TEXT, created_at TEXT NOT NULL)`;
 }
 
 function rowToLead(r: any): Lead {
-  return { id: r.id, sessionId: r.session_id, status: r.status as LeadStatus, intake: r.intake,
+  return {
+    id: r.id, sessionId: r.session_id, status: r.status as LeadStatus, intake: r.intake,
     envelopeId: r.envelope_id ?? undefined, signed: r.signed, paid: r.paid,
-    pdfBlobKey: r.pdf_blob_key ?? undefined, createdAt: r.created_at, updatedAt: r.updated_at };
+    pdfBlobKey: r.pdf_blob_key ?? undefined,
+    uploads: Array.isArray(r.uploads) ? r.uploads : [],
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  };
 }
 
 export function createPostgresRepository(): Repository {
@@ -49,8 +54,8 @@ export function createPostgresRepository(): Repository {
 
     async createLead(l) {
       const sql = getSql();
-      await sql`INSERT INTO leads (id, session_id, status, intake, envelope_id, signed, paid, pdf_blob_key, created_at, updated_at)
-        VALUES (${l.id}, ${l.sessionId}, ${l.status}, ${JSON.stringify(l.intake)}, ${l.envelopeId ?? null}, ${l.signed}, ${l.paid}, ${l.pdfBlobKey ?? null}, ${l.createdAt}, ${l.updatedAt})`;
+      await sql`INSERT INTO leads (id, session_id, status, intake, envelope_id, signed, paid, pdf_blob_key, uploads, created_at, updated_at)
+        VALUES (${l.id}, ${l.sessionId}, ${l.status}, ${JSON.stringify(l.intake)}, ${l.envelopeId ?? null}, ${l.signed}, ${l.paid}, ${l.pdfBlobKey ?? null}, ${JSON.stringify(l.uploads ?? [])}, ${l.createdAt}, ${l.updatedAt})`;
     },
     async getLead(id) {
       const sql = getSql();
@@ -71,6 +76,11 @@ export function createPostgresRepository(): Repository {
       return n;
     },
 
+    async addUpload(leadId, ref) {
+      const sql = getSql();
+      await sql`UPDATE leads SET uploads = uploads || ${JSON.stringify([ref])}::jsonb WHERE id = ${leadId}`;
+    },
+
     async recordEvent(ev: DemoEvent) {
       const sql = getSql();
       const r = await sql`INSERT INTO processed_events (event_id, lead_id, type, received_at, raw)
@@ -87,12 +97,15 @@ export function createPostgresRepository(): Repository {
     async getClaimByLead(leadId) {
       const sql = getSql();
       const r = await sql`SELECT * FROM claims WHERE lead_id = ${leadId}`;
-      return r[0] ? { id: r[0].id, leadId: r[0].lead_id, claimNumber: r[0].claim_number, pdfBlobKey: r[0].pdf_blob_key ?? undefined, createdAt: r[0].created_at } : null;
+      return r[0] ? {
+        id: r[0].id, leadId: r[0].lead_id, claimNumber: r[0].claim_number,
+        status: r[0].status ?? '', pdfBlobKey: r[0].pdf_blob_key ?? undefined, createdAt: r[0].created_at,
+      } : null;
     },
     async insertClaim(c: Claim) {
       const sql = getSql();
-      await sql`INSERT INTO claims (id, lead_id, claim_number, pdf_blob_key, created_at)
-        VALUES (${c.id}, ${c.leadId}, ${c.claimNumber}, ${c.pdfBlobKey ?? null}, ${c.createdAt})
+      await sql`INSERT INTO claims (id, lead_id, claim_number, status, pdf_blob_key, created_at)
+        VALUES (${c.id}, ${c.leadId}, ${c.claimNumber}, ${c.status}, ${c.pdfBlobKey ?? null}, ${c.createdAt})
         ON CONFLICT (lead_id) DO NOTHING`;
       return (await this.getClaimByLead(c.leadId))!;
     },

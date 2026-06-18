@@ -15,7 +15,8 @@ export async function createClaim(leadId: string, repo: Repository, deps: Deps):
 
   const claimNumber = `CLM-${CLAIM_BASE + (await repo.countClaims())}`;
   const claim: Claim = {
-    id: deps.genId(), leadId, claimNumber, pdfBlobKey: lead.pdfBlobKey, createdAt: deps.now(),
+    id: deps.genId(), leadId, claimNumber, status: 'New Intake - Paid',
+    pdfBlobKey: lead.pdfBlobKey, createdAt: deps.now(),
   };
   const inserted = await repo.insertClaim(claim);
   await repo.updateLead(leadId, { status: 'claimed' });

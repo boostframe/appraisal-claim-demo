@@ -1,5 +1,5 @@
 import type { Repository } from './types';
-import type { Lead, DemoEvent, Claim } from '../domain/types';
+import type { Lead, DemoEvent, Claim, UploadRef } from '../domain/types';
 
 export class MemoryRepository implements Repository {
   private sessions = new Set<string>();
@@ -10,18 +10,31 @@ export class MemoryRepository implements Repository {
   async createSession(id: string) { this.sessions.add(id); }
   async hasSession(id: string) { return this.sessions.has(id); }
 
-  async createLead(l: Lead) { this.leads.set(l.id, { ...l }); }
-  async getLead(id: string) { const l = this.leads.get(id); return l ? { ...l } : null; }
+  async createLead(l: Lead) {
+    this.leads.set(l.id, { ...l, uploads: [...(l.uploads ?? [])] });
+  }
+  async getLead(id: string) {
+    const l = this.leads.get(id);
+    return l ? { ...l, uploads: [...l.uploads] } : null;
+  }
   async getLeadByEnvelope(envelopeId: string) {
-    for (const l of this.leads.values()) if (l.envelopeId === envelopeId) return { ...l };
+    for (const l of this.leads.values()) {
+      if (l.envelopeId === envelopeId) return { ...l, uploads: [...l.uploads] };
+    }
     return null;
   }
   async updateLead(id: string, patch: Partial<Lead>) {
     const cur = this.leads.get(id);
     if (!cur) throw new Error(`lead ${id} not found`);
-    const next = { ...cur, ...patch };
+    const next = { ...cur, ...patch, uploads: [...(patch.uploads ?? cur.uploads)] };
     this.leads.set(id, next);
-    return { ...next };
+    return { ...next, uploads: [...next.uploads] };
+  }
+
+  async addUpload(leadId: string, ref: UploadRef) {
+    const lead = this.leads.get(leadId);
+    if (!lead) throw new Error(`lead ${leadId} not found`);
+    lead.uploads.push({ ...ref });
   }
 
   async recordEvent(ev: DemoEvent) {

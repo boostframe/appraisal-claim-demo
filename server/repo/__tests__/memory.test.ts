@@ -1,11 +1,26 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryRepository } from '../memory';
-import type { Lead } from '../../domain/types';
+import type { Lead, Claim } from '../../domain/types';
 
 function lead(id: string): Lead {
-  return { id, sessionId: 's1', status: 'pending',
-    intake: { claimantName: 'A', claimantEmail: 'a@b.c', propertyAddress: 'X', lossType: 'Fire', lossDescription: 'd' },
-    signed: false, paid: false, createdAt: 't', updatedAt: 't' };
+  return {
+    id, sessionId: 's1', status: 'pending',
+    intake: {
+      claimantName: 'Dana Reed', claimantEmail: 'dana@example.com',
+      phone: '555-1234', address: '42 Elm St',
+      insuranceCarrier: 'Acme Insurance', claimNumber: 'ACM-2024-001',
+      adjuster: 'Bob Smith', vehicleYear: '2019', vehicleMake: 'Toyota',
+      vehicleModel: 'Camry', vin: '4T1B11HK3KU000001', mileage: '62000',
+      settlementOffer: '14500.00', lienholder: 'None',
+      gapCoverage: 'No', requestRightToAppraisal: false,
+    },
+    uploads: [],
+    signed: false, paid: false, createdAt: 't', updatedAt: 't',
+  };
+}
+
+function claim(overrides: Partial<Claim> = {}): Claim {
+  return { id: 'c1', leadId: 'l1', claimNumber: 'CLM-1040', status: 'New Intake - Paid', createdAt: 't', ...overrides };
 }
 
 describe('MemoryRepository', () => {
@@ -33,7 +48,7 @@ describe('MemoryRepository', () => {
   });
 
   it('inserts a claim once per lead and counts', async () => {
-    const c = { id: 'c1', leadId: 'l1', claimNumber: 'CLM-1040', createdAt: 't' };
+    const c = claim();
     expect((await repo.insertClaim(c)).claimNumber).toBe('CLM-1040');
     const again = await repo.insertClaim({ ...c, id: 'c2', claimNumber: 'CLM-9999' });
     expect(again.id).toBe('c1'); // existing returned, not duplicated
@@ -46,10 +61,8 @@ describe('MemoryRepository', () => {
     await repo.recordEvent(ev);
 
     const [first] = await repo.listEvents('l1');
-    // Mutate the returned object
     (first as any).type = 'MUTATED';
 
-    // A second call must still return the original value
     const [second] = await repo.listEvents('l1');
     expect(second.type).toBe('payment.succeeded');
   });
@@ -61,29 +74,53 @@ describe('MemoryRepository', () => {
   });
 
   it('resetSession clears all leads, events, and claims for a session without touching other sessions', async () => {
-    // Session 1 — lead with two events and a claim
     const l1 = { ...lead('l1'), sessionId: 's1' };
     await repo.createLead(l1);
     const ev1 = { eventId: 'e1', leadId: 'l1', type: 'payment.succeeded' as const, receivedAt: 't', raw: {} };
     const ev2 = { eventId: 'e2', leadId: 'l1', type: 'payment.succeeded' as const, receivedAt: 't2', raw: {} };
     await repo.recordEvent(ev1);
     await repo.recordEvent(ev2);
-    await repo.insertClaim({ id: 'c1', leadId: 'l1', claimNumber: 'CLM-1', createdAt: 't' });
+    await repo.insertClaim(claim());
 
-    // Session 2 — independent lead
     const l2 = { ...lead('l2'), sessionId: 's2' };
     await repo.createLead(l2);
 
-    // Reset only session 1
     await repo.resetSession('s1');
 
-    // Session 1 data must be gone
     expect(await repo.getLead('l1')).toBeNull();
     expect(await repo.getClaimByLead('l1')).toBeNull();
     expect(await repo.listEvents('l1')).toHaveLength(0);
     expect(await repo.countClaims()).toBe(0);
-
-    // Session 2 lead must survive
     expect((await repo.getLead('l2'))?.id).toBe('l2');
+  });
+
+  it('addUpload appends uploads and getLead returns all of them', async () => {
+    await repo.createLead(lead('l1'));
+
+    await repo.addUpload('l1', { category: 'vehicle_photo', key: 'uploads/l1/a.jpg', name: 'front.jpg', size: 10000, contentType: 'image/jpeg' });
+    await repo.addUpload('l1', { category: 'valuation_report', key: 'uploads/l1/b.pdf', name: 'report.pdf', size: 55000, contentType: 'application/pdf' });
+
+    const fetched = await repo.getLead('l1');
+    expect(fetched?.uploads).toHaveLength(2);
+    expect(fetched?.uploads[0].name).toBe('front.jpg');
+    expect(fetched?.uploads[1].category).toBe('valuation_report');
+  });
+
+  it('addUpload throws when the lead does not exist', async () => {
+    await expect(
+      repo.addUpload('nonexistent', { category: 'supporting_doc', key: 'k', name: 'n', size: 1, contentType: 'application/pdf' })
+    ).rejects.toThrow();
+  });
+
+  it('mutating the uploads array returned by getLead does not corrupt the store', async () => {
+    await repo.createLead(lead('l1'));
+    await repo.addUpload('l1', { category: 'vehicle_photo', key: 'uploads/l1/a.jpg', name: 'a.jpg', size: 1, contentType: 'image/jpeg' });
+
+    const first = await repo.getLead('l1');
+    first!.uploads.push({ category: 'supporting_doc', key: 'INJECTED', name: 'x', size: 1, contentType: 'application/pdf' });
+
+    const second = await repo.getLead('l1');
+    expect(second?.uploads).toHaveLength(1);
+    expect(second?.uploads[0].key).toBe('uploads/l1/a.jpg');
   });
 });

@@ -6,9 +6,21 @@ const RUN = !!process.env.NETLIFY_DATABASE_URL;
 const d = RUN ? describe : describe.skip;
 
 function lead(id: string): Lead {
-  return { id, sessionId: `sess-${id}`, status: 'pending',
-    intake: { claimantName: 'A', claimantEmail: 'a@b.c', propertyAddress: 'X', lossType: 'Fire', lossDescription: 'd' },
-    signed: false, paid: false, createdAt: '2026-06-17T00:00:00Z', updatedAt: '2026-06-17T00:00:00Z' };
+  return {
+    id, sessionId: `sess-${id}`, status: 'pending',
+    intake: {
+      claimantName: 'Dana Reed', claimantEmail: 'dana@example.com',
+      phone: '555-1234', address: '42 Elm St',
+      insuranceCarrier: 'Acme Insurance', claimNumber: 'ACM-2024-001',
+      adjuster: 'Bob Smith', vehicleYear: '2019', vehicleMake: 'Toyota',
+      vehicleModel: 'Camry', vin: '4T1B11HK3KU000001', mileage: '62000',
+      settlementOffer: '14500.00', lienholder: 'None',
+      gapCoverage: 'No', requestRightToAppraisal: false,
+    },
+    uploads: [],
+    signed: false, paid: false,
+    createdAt: '2026-06-17T00:00:00Z', updatedAt: '2026-06-17T00:00:00Z',
+  };
 }
 
 d('PostgresRepository (live Neon)', () => {
@@ -25,9 +37,10 @@ d('PostgresRepository (live Neon)', () => {
     expect(await repo.recordEvent(ev)).toBe(true);
     expect(await repo.recordEvent(ev)).toBe(false);
 
-    const c = { id: `c-${id}`, leadId: id, claimNumber: 'CLM-9000', createdAt: 't' };
+    const c = { id: `c-${id}`, leadId: id, claimNumber: 'CLM-9000', status: 'New Intake - Paid', createdAt: 't' };
     await repo.insertClaim(c);
     const dup = await repo.insertClaim({ ...c, id: `c2-${id}`, claimNumber: 'CLM-9999' });
     expect(dup.id).toBe(c.id);
+    expect(dup.status).toBe('New Intake - Paid');
   });
 });

@@ -3,9 +3,28 @@ export type LeadStatus = 'pending' | 'signed' | 'paid' | 'claimed';
 export interface IntakeData {
   claimantName: string;
   claimantEmail: string;
-  propertyAddress: string;
-  lossType: string;
-  lossDescription: string;
+  phone: string;
+  address: string;
+  insuranceCarrier: string;
+  claimNumber: string;
+  adjuster: string;
+  vehicleYear: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  vin: string;
+  mileage: string;
+  settlementOffer: string;
+  lienholder: string;
+  gapCoverage: string;            // 'Yes' | 'No' | 'Unknown' carried as a string
+  requestRightToAppraisal: boolean;
+}
+
+export interface UploadRef {
+  category: 'vehicle_photo' | 'valuation_report' | 'supporting_doc';
+  key: string;
+  name: string;
+  size: number;
+  contentType: string;
 }
 
 export interface Lead {
@@ -17,6 +36,7 @@ export interface Lead {
   signed: boolean;
   paid: boolean;
   pdfBlobKey?: string;
+  uploads: UploadRef[];
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +55,7 @@ export interface Claim {
   id: string;
   leadId: string;
   claimNumber: string;
+  status: string;
   pdfBlobKey?: string;
   createdAt: string;
 }

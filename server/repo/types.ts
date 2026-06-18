@@ -1,4 +1,4 @@
-import type { Lead, DemoEvent, Claim } from '../domain/types';
+import type { Lead, DemoEvent, Claim, UploadRef } from '../domain/types';
 
 export interface Repository {
   createSession(id: string): Promise<void>;
@@ -8,6 +8,8 @@ export interface Repository {
   getLead(id: string): Promise<Lead | null>;
   getLeadByEnvelope(envelopeId: string): Promise<Lead | null>;
   updateLead(id: string, patch: Partial<Lead>): Promise<Lead>;
+
+  addUpload(leadId: string, ref: UploadRef): Promise<void>;
 
   /** Returns true if newly recorded, false if eventId was already processed. */
   recordEvent(event: DemoEvent): Promise<boolean>;
