@@ -11,7 +11,27 @@ export function App() {
   const [fake, setFake] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // When signing finishes, DocuSign loads our returnUrl (?signed=1) INTO the signing iframe,
+  // which would otherwise re-render the whole app inside that little frame. Detect that case.
+  const isSigningReturn = window.self !== window.top &&
+    new URLSearchParams(window.location.search).has('signed');
+
   useEffect(() => { if (leadId) localStorage.setItem('leadId', leadId); }, [leadId]);
+
+  // Parent window: when the framed return posts back, close the signing iframe and advance.
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'signing-complete') setSigningUrl(null);
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  // Framed return: tell the parent we're done instead of rendering the app inside the iframe.
+  useEffect(() => {
+    if (isSigningReturn) window.parent.postMessage({ type: 'signing-complete' }, window.location.origin);
+  }, [isSigningReturn]);
 
   async function submit(d: IntakeData, files: PickedFile[]) {
     setBusy(true);
@@ -30,6 +50,14 @@ export function App() {
     if (!leadId) return;
     await api.completeSigningDev(leadId);
     setSigningUrl(null);
+  }
+
+  if (isSigningReturn) {
+    return (
+      <div style={{ padding: '40px 24px', textAlign: 'center', font: '500 15px/1.5 system-ui, sans-serif', color: '#33415a' }}>
+        Signing complete. Returning to your application…
+      </div>
+    );
   }
 
   return (
