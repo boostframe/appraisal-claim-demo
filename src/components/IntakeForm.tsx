@@ -11,6 +11,17 @@ const EMPTY: IntakeData = {
   settlementOffer: '', lienholder: '', gapCoverage: 'Unknown', requestRightToAppraisal: false,
 };
 
+// Obviously-fictional values so a reviewer can run the flow without typing. Emails use
+// the reserved example.com domain (never delivers) and phones use the 555 range.
+const SAMPLE: IntakeData = {
+  claimantName: 'Jordan Avery', claimantEmail: 'jordan.avery@example.com', phone: '(555) 012-3456',
+  address: '482 Birchwood Lane, Columbus, OH 43215',
+  insuranceCarrier: 'State Farm', claimNumber: 'SF-2026-004417',
+  adjuster: 'Pat Morgan, (555) 014-8890, pat.morgan@example.com',
+  vehicleYear: '2019', vehicleMake: 'Toyota', vehicleModel: 'Camry', vin: '4T1BF1FK5KU839201', mileage: '84500',
+  settlementOffer: '$18,250.00', lienholder: 'None', gapCoverage: 'No', requestRightToAppraisal: false,
+};
+
 export function IntakeForm({ onSubmit, busy }: { onSubmit: (d: IntakeData, files: PickedFile[]) => void; busy: boolean }) {
   const [d, setD] = useState<IntakeData>(EMPTY);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -40,6 +51,10 @@ export function IntakeForm({ onSubmit, busy }: { onSubmit: (d: IntakeData, files
           Tell us about the vehicle and the insurer's offer. We'll generate your agreements for
           signature, then collect payment — your claim opens only after both are complete.
         </p>
+        <button type="button" className="btn btn--ghost" style={{ marginTop: 12 }}
+          disabled={busy} onClick={() => setD(SAMPLE)}>
+          Fill with sample data
+        </button>
       </div>
 
       <section>
