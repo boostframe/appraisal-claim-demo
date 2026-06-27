@@ -84,7 +84,7 @@ server/docusign/            DocuSignClient interface
 server/blobs/               BlobStore interface
   store.ts                  MemoryBlobStore (tests) + NetlifyBlobStore (prod)
 server/templates/           Document HTML builder (produces DocuSign-ready HTML)
-server/session.ts           Passcode gate + session-cookie helpers
+server/session.ts           Session-cookie helpers
 ```
 
 The fake/real swap is driven by a single env var (`DEMO_FAKE=1`) resolved in
