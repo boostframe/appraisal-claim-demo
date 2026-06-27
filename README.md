@@ -6,7 +6,7 @@ payment → a claim is created **only after both the signature and the payment h
 and never twice.**
 
 It exists to prove the part the workflow hangs on: the ordering guarantee and the DocuSign
-integration. Live (test mode): **https://client-onboarding-demo.netlify.app** (access code required).
+integration. Live (test mode): **https://client-onboarding-demo.netlify.app** — open, no login required.
 
 **Stack:** React + Vite (UI) · Netlify Functions (serverless API) · **Netlify Database** (GA,
 Postgres) · Netlify Blobs (file + signed-PDF storage) · DocuSign eSignature (JWT grant + embedded
@@ -38,7 +38,7 @@ flow runs with nothing external:
 npm install
 netlify link              # one-time: associate the folder with a Netlify site
 DEMO_FAKE=1 netlify dev
-# open http://localhost:8888/?key=appraise   (local default access code)
+# open http://localhost:8888
 ```
 
 - Use `netlify dev` (not `npx vite`) so the `/api/*` functions run alongside the UI.
@@ -68,7 +68,6 @@ The live site is deployed from this repo on Netlify. To stand up your own:
 
    | Var | Value |
    |---|---|
-   | `DEMO_PASSCODE` | your access code |
    | `APP_URL` | `https://YOUR-SITE.netlify.app` |
    | `DS_INTEGRATION_KEY` | integration key (GUID) |
    | `DS_USER_ID` | API user ID (GUID) |
@@ -87,7 +86,7 @@ The live site is deployed from this repo on Netlify. To stand up your own:
 
 ## What to try
 
-Open the live URL with the access code. The **case-file rail** on the right shows the live
+Open the live URL. The **case-file rail** on the right shows the live
 state machine and an event ledger, so the gating is visible in real time.
 
 | Scenario | Expected |
@@ -105,7 +104,7 @@ state machine and an event ledger, so the gating is visible in real time.
 ```
 netlify/functions/   HTTP handlers: create-lead, recipient-view, docusign-webhook,
                      simulate-payment, replay-event, upload, get-upload, get-pdf,
-                     get-state, reset, verify-passcode, dev-complete-signing (fake mode)
+                     get-state, reset, dev-complete-signing (fake mode)
 server/
   config.ts          Env loader + private-key normalization
   wiring.ts          Dependency factory — real vs fake impls (DEMO_FAKE)

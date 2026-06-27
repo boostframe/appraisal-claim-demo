@@ -8,8 +8,7 @@ import type { CreateLeadResponse } from '../../src/types';
 
 export default async (req: Request, _ctx: Context): Promise<Response> => {
   const cfg = loadConfig();
-  const body = await req.json() as { passcode: string; intake: IntakeData };
-  if (body.passcode !== cfg.passcode) return new Response('forbidden', { status: 403 });
+  const body = await req.json() as { intake: IntakeData };
   await initStore();
 
   const repo = getRepo(); const deps = buildDeps();

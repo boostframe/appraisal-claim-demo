@@ -1,7 +1,6 @@
 import type { DocuSignConfig } from './docusign/real';
 
 export interface AppConfig {
-  passcode: string;
   appUrl: string;
   docusign: DocuSignConfig & { spikeSignerEmail: string };
 }
@@ -42,7 +41,6 @@ function normalizePrivateKey(raw: string): string {
 
 export function loadConfig(): AppConfig {
   return {
-    passcode: process.env.DEMO_PASSCODE ?? 'appraise',
     appUrl: process.env.APP_URL ?? 'http://localhost:8888',
     docusign: {
       basePath: process.env.DS_BASE_PATH ?? 'https://demo.docusign.net/restapi',
