@@ -19,7 +19,7 @@ const SAMPLE: IntakeData = {
   insuranceCarrier: 'State Farm', claimNumber: 'SF-2026-004417',
   adjuster: 'Pat Morgan, (555) 014-8890, pat.morgan@example.com',
   vehicleYear: '2019', vehicleMake: 'Toyota', vehicleModel: 'Camry', vin: '4T1BF1FK5KU839201', mileage: '84500',
-  settlementOffer: '$18,250.00', lienholder: 'None', gapCoverage: 'No', requestRightToAppraisal: false,
+  settlementOffer: '$18,250.00', lienholder: 'None', gapCoverage: 'No', requestRightToAppraisal: true,
 };
 
 export function IntakeForm({ onSubmit, busy }: { onSubmit: (d: IntakeData, files: PickedFile[]) => void; busy: boolean }) {
